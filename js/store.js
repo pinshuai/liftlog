@@ -60,6 +60,13 @@ export function getExercise(id) {
     || { id, name: 'Unknown exercise', bodyPart: 'Other', custom: true };
 }
 
+// Assisted exercises (e.g. "Pull Up (Assisted)") log the machine's assistance as the
+// weight, so lower is better and the weight is not lifted load.
+export const isAssisted = (exerciseId) => /assisted/i.test(getExercise(exerciseId).name);
+
+// "185 lb", or "50 lb assist" for assisted exercises.
+export const weightLabel = (exerciseId, w, unit) => `${w === '' || w == null ? 0 : w} ${unit}${isAssisted(exerciseId) ? ' assist' : ''}`;
+
 export function addCustomExercise(name, bodyPart) {
   const ex = { id: 'cx-' + uid(), name: name.trim(), bodyPart, custom: true };
   state.customExercises.push(ex);
@@ -110,7 +117,7 @@ export function exportMarkdown() {
     const mins = Math.round((w.end - w.start) / 60000);
     lines.push(`## ${day(w.start)} ${w.name} (${mins} min)`, '');
     for (const e of w.entries) {
-      const sets = e.sets.map((s) => `${s.w === '' ? 0 : s.w} ${w.unit} x ${s.r}`).join(', ');
+      const sets = e.sets.map((s) => `${weightLabel(e.exerciseId, s.w, w.unit)} x ${s.r}`).join(', ');
       lines.push(`- ${getExercise(e.exerciseId).name}: ${sets}`);
     }
     lines.push('');

@@ -1,8 +1,10 @@
-import { state, save, getExercise, saveAsTemplate } from '../store.js';
+import { state, save, getExercise, saveAsTemplate, isAssisted, weightLabel } from '../store.js';
 import { confirmModal, promptModal } from '../ui.js';
 import { esc, fmtDate, fmtDuration, fmtNum, toUnit } from '../util.js';
 
-const volume = (w) => w.entries.reduce((sum, e) => sum + e.sets.reduce((s, x) => s + (Number(x.w) || 0) * (Number(x.r) || 0), 0), 0);
+// Assistance is not lifted load, so assisted exercises don't count toward volume.
+const volume = (w) => w.entries.filter((e) => !isAssisted(e.exerciseId))
+  .reduce((sum, e) => sum + e.sets.reduce((s, x) => s + (Number(x.w) || 0) * (Number(x.r) || 0), 0), 0);
 
 export function renderHistory(root) {
   const unit = state.settings.unit;
@@ -30,7 +32,7 @@ export function renderWorkoutDetail(root, id) {
     ${w.entries.map((e) => `
       <div class="card">
         <h3><a href="#/exercise/${esc(e.exerciseId)}" style="color:inherit">${esc(getExercise(e.exerciseId).name)}</a></h3>
-        ${e.sets.map((s, i) => `<div class="row between"><span class="muted">Set ${i + 1}</span><span>${fmtNum(toUnit(s.w, w.unit, unit)) || 0} ${unit} x ${s.r}</span></div>`).join('')}
+        ${e.sets.map((s, i) => `<div class="row between"><span class="muted">Set ${i + 1}</span><span>${weightLabel(e.exerciseId, fmtNum(toUnit(s.w, w.unit, unit)), unit)} x ${s.r}</span></div>`).join('')}
       </div>`).join('')}
     <button class="block" data-save-tpl>Save as template</button>
     <button class="block danger" data-delete>Delete workout</button>`;

@@ -1,4 +1,4 @@
-import { state, save, allExercises, getExercise, exerciseHistory } from '../store.js';
+import { state, save, allExercises, getExercise, exerciseHistory, isAssisted, weightLabel } from '../store.js';
 import { confirmModal } from '../ui.js';
 import { esc, e1rm, fmtDate, fmtNum, toUnit } from '../util.js';
 import { BODY_PARTS } from '../exercises.js';
@@ -35,7 +35,7 @@ export function renderExercises(root) {
 }
 
 // Line chart of best e1RM per session, as inline SVG.
-function chart(points, unit) {
+function chart(points, caption) {
   if (points.length < 2) return '<p class="muted">Log at least two sessions to see a chart.</p>';
   const W = 340, H = 180, L = 36, R = 8, T = 10, B = 22;
   const ys = points.map((p) => p.y);
@@ -56,7 +56,7 @@ function chart(points, unit) {
       <path class="ln" d="${d}"/>
       ${points.map((p) => `<circle class="pt" cx="${sx(p.x).toFixed(1)}" cy="${sy(p.y).toFixed(1)}" r="3"/>`).join('')}
     </svg>
-    <p class="muted">Estimated 1-rep max (${unit}) per session</p>`;
+    <p class="muted">${caption}</p>`;
 }
 
 export function renderExerciseDetail(root, id) {
@@ -67,33 +67,38 @@ export function renderExerciseDetail(root, id) {
     sets: sets.map((s) => ({ w: Number(toUnit(s.w, workout.unit, unit)) || 0, r: Number(s.r) })),
   }));
 
+  // Assisted: best = least assistance (more reps breaks ties); chart least assistance.
+  // Otherwise: best = heaviest set; chart best estimated 1RM.
+  const assisted = isAssisted(id);
+  const better = (s, b) => !b || (assisted ? s.w < b.w : s.w > b.w) || (s.w === b.w && s.r > b.r);
   let bestSet = null, bestE1rm = 0;
   const points = sessions.map(({ workout, sets }) => {
-    let top = 0;
+    let top = assisted ? Infinity : 0;
     for (const s of sets) {
-      const est = e1rm(s.w, s.r);
-      top = Math.max(top, est);
-      if (!bestSet || s.w > bestSet.w || (s.w === bestSet.w && s.r > bestSet.r)) bestSet = s;
+      top = assisted ? Math.min(top, s.w) : Math.max(top, e1rm(s.w, s.r));
+      if (better(s, bestSet)) bestSet = s;
     }
-    bestE1rm = Math.max(bestE1rm, top);
+    if (!assisted) bestE1rm = Math.max(bestE1rm, top);
     return { x: workout.start, y: top };
-  }).filter((p) => p.y > 0);
+  }).filter((p) => (assisted ? Number.isFinite(p.y) : p.y > 0));
 
   root.innerHTML = `
     <a class="btn text" href="#/exercises">&larr; Exercises</a>
     <h1 class="ex-name">${exIcon(id)}${esc(ex.name)}</h1>
     <div class="card">
-      <span class="stat"><span class="muted">Best set</span><b>${bestSet ? `${fmtNum(bestSet.w)} x ${bestSet.r}` : '-'}</b></span>
-      <span class="stat"><span class="muted">Est. 1RM</span><b>${bestE1rm ? fmtNum(bestE1rm) : '-'}</b></span>
+      <span class="stat"><span class="muted">${assisted ? 'Least assist' : 'Best set'}</span><b>${bestSet ? `${fmtNum(bestSet.w)} x ${bestSet.r}` : '-'}</b></span>
+      ${assisted ? '' : `<span class="stat"><span class="muted">Est. 1RM</span><b>${bestE1rm ? fmtNum(bestE1rm) : '-'}</b></span>`}
       <span class="stat"><span class="muted">Sessions</span><b>${sessions.length}</b></span>
     </div>
-    <div class="card">${chart(points, unit)}</div>
+    <div class="card">${chart(points, assisted
+      ? `Least assistance (${unit}) per session, lower is better`
+      : `Estimated 1-rep max (${unit}) per session`)}</div>
     <h2>Sessions</h2>
     ${sessions.length ? '' : '<p class="muted">No sessions logged yet.</p>'}
     ${[...sessions].reverse().map(({ workout, sets }) => `
       <div class="card link" data-w="${workout.id}">
         <div class="muted">${fmtDate(workout.start)}</div>
-        ${sets.map((s) => `${fmtNum(s.w)} ${unit} x ${s.r}`).join(', ')}
+        ${sets.map((s) => `${weightLabel(id, fmtNum(s.w), unit)} x ${s.r}`).join(', ')}
       </div>`).join('')}
     ${ex.custom && state.customExercises.some((x) => x.id === id) ? '<button class="block danger" data-delete>Delete custom exercise</button>' : ''}`;
 

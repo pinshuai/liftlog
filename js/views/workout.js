@@ -1,9 +1,11 @@
-import { state, save, getExercise, previousSets, templateItems, saveAsTemplate, backupDue } from '../store.js';
+import { state, save, getExercise, previousSets, templateItems, saveAsTemplate, backupDue, isAssisted } from '../store.js';
 import { pickExercise, confirmModal, promptModal } from '../ui.js';
 import { startRest, stopRest } from '../rest.js';
 import { uid, esc, fmtNum, toUnit, fmtDuration } from '../util.js';
 import { exIcon } from '../icons.js';
 
+// Set rows added for a newly added exercise (workout and template editor).
+const DEFAULT_SETS = 4;
 let clock = null;
 
 // ---------- Home: templates + start ----------
@@ -92,7 +94,7 @@ function renderActive(root) {
           <button class="text danger" data-remove-ex="${ei}">Remove</button>
         </div>
         <table class="sets">
-          <tr><th class="setnum">Set</th><th>Previous</th><th class="col-w">${a.unit}</th><th class="col-r">Reps</th><th></th><th></th></tr>
+          <tr><th class="setnum">Set</th><th>Previous</th><th class="col-w">${isAssisted(e.exerciseId) ? `Assist ${a.unit}` : a.unit}</th><th class="col-r">Reps</th><th></th><th></th></tr>
           ${e.sets.map((s, si) => `
             <tr class="${s.done ? 'done' : ''}">
               <td class="setnum">${si + 1}</td>
@@ -168,7 +170,7 @@ function renderActive(root) {
   root.querySelector('[data-add-ex]').onclick = async () => {
     const id = await pickExercise();
     if (!id) return;
-    a.entries.push({ exerciseId: id, sets: setsFor(id, 3) });
+    a.entries.push({ exerciseId: id, sets: setsFor(id, DEFAULT_SETS) });
     save();
     render();
   };
@@ -270,7 +272,7 @@ export function renderTemplate(root, id) {
     }));
     root.querySelector('[data-add]').onclick = async () => {
       const exId = await pickExercise();
-      if (exId) { t.items.push({ exerciseId: exId, sets: 3 }); draw(); }
+      if (exId) { t.items.push({ exerciseId: exId, sets: DEFAULT_SETS }); draw(); }
     };
     root.querySelector('[data-save]').onclick = () => {
       t.name = t.name.trim();
