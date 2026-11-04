@@ -1,5 +1,5 @@
 // Bump CACHE whenever any app file changes so phones pick up the new version.
-const CACHE = 'liftlog-v2';
+const CACHE = 'liftlog-v3';
 const FILES = [
   './',
   'index.html',

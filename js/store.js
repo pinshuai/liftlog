@@ -79,6 +79,18 @@ export function exerciseHistory(exerciseId) {
   return out;
 }
 
+// Template items (exercise order + set count) from workout entries.
+export function templateItems(entries) {
+  return entries.filter((e) => e.sets.length).map((e) => ({ exerciseId: e.exerciseId, sets: e.sets.length }));
+}
+
+export function saveAsTemplate(name, entries) {
+  const t = { id: uid(), name, items: templateItems(entries) };
+  state.templates.push(t);
+  save();
+  return t;
+}
+
 export function exportJSON() {
   return JSON.stringify({ app: 'liftlog', exportedAt: new Date().toISOString(), ...state }, null, 2);
 }

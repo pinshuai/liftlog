@@ -14,12 +14,12 @@ export function openModal(inner) {
   return { el: bg.querySelector('.modal'), close };
 }
 
-export function confirmModal(message, okLabel = 'OK', danger = false) {
+export function confirmModal(message, okLabel = 'OK', danger = false, cancelLabel = 'Cancel') {
   return new Promise((resolve) => {
     const { el, close } = openModal(`
       <p>${esc(message)}</p>
       <button class="${danger ? 'danger' : 'primary'} block" data-ok>${esc(okLabel)}</button>
-      <button class="block" data-cancel>Cancel</button>`);
+      <button class="block" data-cancel>${esc(cancelLabel)}</button>`);
     el.querySelector('[data-ok]').onclick = () => { close(); resolve(true); };
     el.querySelector('[data-cancel]').onclick = () => { close(); resolve(false); };
   });

@@ -1,4 +1,4 @@
-import { state, save, getExercise, previousSets } from '../store.js';
+import { state, save, getExercise, previousSets, templateItems, saveAsTemplate } from '../store.js';
 import { pickExercise, confirmModal, promptModal } from '../ui.js';
 import { startRest, stopRest } from '../rest.js';
 import { uid, esc, fmtNum, toUnit, fmtDuration } from '../util.js';
@@ -100,6 +100,7 @@ function renderActive(root) {
         <button class="block" data-add-set="${ei}">+ Add set</button>
       </div>`).join('')}
     <button class="block" data-add-ex>+ Add exercise</button>
+    <button class="block" data-save-tpl>Save as template</button>
     <button class="block danger" data-discard>Discard workout</button>`;
 
   const tickClock = () => {
@@ -171,6 +172,18 @@ function renderActive(root) {
     if (name) { a.name = name; save(); render(); }
   };
 
+  root.querySelector('[data-save-tpl]').onclick = async () => {
+    if (!a.entries.length) return;
+    const name = await promptModal('Template name', a.name);
+    if (!name) return;
+    const t = saveAsTemplate(name, a.entries);
+    // Link the workout to the new template so Finish compares against it.
+    a.templateId = t.id;
+    a.name = name;
+    save();
+    render();
+  };
+
   root.querySelector('[data-discard]').onclick = async () => {
     if (!(await confirmModal('Discard this workout? Nothing will be saved.', 'Discard', true))) return;
     state.active = null;
@@ -194,6 +207,14 @@ function renderActive(root) {
     }
     const open = a.entries.reduce((n, e) => n + e.sets.filter((s) => !s.done).length, 0);
     if (open && !(await confirmModal(`${open} unchecked set(s) will be dropped. Finish workout?`, 'Finish'))) return;
+    // If exercises or set rows were added/removed vs. the template, offer to update it.
+    // Compares all rows (not just checked ones) so a skipped set alone doesn't trigger this.
+    const tpl = state.templates.find((t) => t.id === a.templateId);
+    const items = templateItems(a.entries);
+    if (tpl && JSON.stringify(items) !== JSON.stringify(tpl.items.map(({ exerciseId, sets }) => ({ exerciseId, sets })))
+      && await confirmModal(`You changed this workout. Update the "${tpl.name}" template to match?`, 'Update template', false, 'Keep template as is')) {
+      tpl.items = items;
+    }
     const workout = { id: a.id, name: a.name, templateId: a.templateId, start: a.start, end: Date.now(), unit: a.unit, entries };
     state.workouts.push(workout);
     state.active = null;

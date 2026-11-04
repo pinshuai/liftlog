@@ -1,5 +1,5 @@
-import { state, save, getExercise } from '../store.js';
-import { confirmModal } from '../ui.js';
+import { state, save, getExercise, saveAsTemplate } from '../store.js';
+import { confirmModal, promptModal } from '../ui.js';
 import { esc, fmtDate, fmtDuration, fmtNum, toUnit } from '../util.js';
 
 const volume = (w) => w.entries.reduce((sum, e) => sum + e.sets.reduce((s, x) => s + (Number(x.w) || 0) * (Number(x.r) || 0), 0), 0);
@@ -32,7 +32,14 @@ export function renderWorkoutDetail(root, id) {
         <h3><a href="#/exercise/${esc(e.exerciseId)}" style="color:inherit">${esc(getExercise(e.exerciseId).name)}</a></h3>
         ${e.sets.map((s, i) => `<div class="row between"><span class="muted">Set ${i + 1}</span><span>${fmtNum(toUnit(s.w, w.unit, unit)) || 0} ${unit} x ${s.r}</span></div>`).join('')}
       </div>`).join('')}
+    <button class="block" data-save-tpl>Save as template</button>
     <button class="block danger" data-delete>Delete workout</button>`;
+  root.querySelector('[data-save-tpl]').onclick = async () => {
+    const name = await promptModal('Template name', w.name);
+    if (!name) return;
+    saveAsTemplate(name, w.entries);
+    location.hash = '#/workout';
+  };
   root.querySelector('[data-delete]').onclick = async () => {
     if (!(await confirmModal('Delete this workout from history?', 'Delete', true))) return;
     state.workouts = state.workouts.filter((x) => x.id !== id);
