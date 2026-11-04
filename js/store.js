@@ -7,7 +7,7 @@ const VERSION = 1;
 function blank() {
   return {
     version: VERSION,
-    settings: { unit: 'lb', restSec: 120 },
+    settings: { unit: 'lb', restSec: 120, lastBackup: null },
     customExercises: [],
     templates: [],
     workouts: [],
@@ -19,7 +19,8 @@ function load() {
   try {
     const raw = localStorage.getItem(KEY);
     if (!raw) return blank();
-    return { ...blank(), ...JSON.parse(raw) };
+    const saved = JSON.parse(raw);
+    return { ...blank(), ...saved, settings: { ...blank().settings, ...saved.settings } };
   } catch (e) {
     console.error('Failed to load saved data', e);
     return blank();
@@ -35,6 +36,15 @@ export function save() {
     console.error('Failed to save', e);
     alert('Could not save data: ' + e.message);
   }
+}
+
+const BACKUP_REMIND_DAYS = 7;
+
+// True when there is data worth protecting and no JSON backup in the last week.
+export function backupDue() {
+  if (!state.workouts.length) return false;
+  const last = state.settings.lastBackup;
+  return !last || Date.now() - last > BACKUP_REMIND_DAYS * 86400000;
 }
 
 // Ask Safari not to evict our storage. Best effort; not supported everywhere.
@@ -89,6 +99,24 @@ export function saveAsTemplate(name, entries) {
   state.templates.push(t);
   save();
   return t;
+}
+
+// Human-readable log, newest workout first. Not importable; JSON is the restorable backup.
+export function exportMarkdown() {
+  const pad = (n) => String(n).padStart(2, '0');
+  const day = (ts) => { const d = new Date(ts); return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`; };
+  const lines = [`# LiftLog export (${day(Date.now())})`, ''];
+  for (const w of [...state.workouts].reverse()) {
+    const mins = Math.round((w.end - w.start) / 60000);
+    lines.push(`## ${day(w.start)} ${w.name} (${mins} min)`, '');
+    for (const e of w.entries) {
+      const sets = e.sets.map((s) => `${s.w === '' ? 0 : s.w} ${w.unit} x ${s.r}`).join(', ');
+      lines.push(`- ${getExercise(e.exerciseId).name}: ${sets}`);
+    }
+    lines.push('');
+  }
+  if (!state.workouts.length) lines.push('_No workouts yet._');
+  return lines.join('\n');
 }
 
 export function exportJSON() {

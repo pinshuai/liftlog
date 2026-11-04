@@ -1,4 +1,4 @@
-import { state, save, getExercise, previousSets, templateItems, saveAsTemplate } from '../store.js';
+import { state, save, getExercise, previousSets, templateItems, saveAsTemplate, backupDue } from '../store.js';
 import { pickExercise, confirmModal, promptModal } from '../ui.js';
 import { startRest, stopRest } from '../rest.js';
 import { uid, esc, fmtNum, toUnit, fmtDuration } from '../util.js';
@@ -13,6 +13,12 @@ export function renderWorkoutHome(root) {
   const tpls = state.templates;
   root.innerHTML = `
     <h1>Workout</h1>
+    ${backupDue() ? `
+      <a class="card backup-due" href="#/settings">
+        <b>Back up your workouts</b>
+        <div class="muted">${state.settings.lastBackup ? `Last backup ${Math.floor((Date.now() - state.settings.lastBackup) / 86400000)} days ago.` : 'No backup yet.'}
+        Tap to save a copy to iCloud Drive.</div>
+      </a>` : ''}
     <button class="primary block" data-empty>Start empty workout</button>
     <div class="row between"><h2>Templates</h2><a class="btn text" href="#/template/new">+ New</a></div>
     ${tpls.length ? '' : '<p class="muted">No templates yet. Create one, e.g. "Upper Body".</p>'}

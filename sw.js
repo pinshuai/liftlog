@@ -1,5 +1,5 @@
 // Bump CACHE whenever any app file changes so phones pick up the new version.
-const CACHE = 'liftlog-v3';
+const CACHE = 'liftlog-v4';
 const FILES = [
   './',
   'index.html',
@@ -22,7 +22,10 @@ const FILES = [
 ];
 
 self.addEventListener('install', (e) => {
-  e.waitUntil(caches.open(CACHE).then((c) => c.addAll(FILES)).then(() => self.skipWaiting()));
+  // cache: 'reload' bypasses the browser HTTP cache (GitHub Pages sends max-age=600),
+  // so a new version never gets filled with stale copies of the previous files.
+  const fresh = FILES.map((f) => new Request(f, { cache: 'reload' }));
+  e.waitUntil(caches.open(CACHE).then((c) => c.addAll(fresh)).then(() => self.skipWaiting()));
 });
 
 self.addEventListener('activate', (e) => {

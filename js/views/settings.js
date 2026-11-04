@@ -1,5 +1,21 @@
-import { state, save, exportJSON, importJSON } from '../store.js';
+import { state, save, exportJSON, exportMarkdown, importJSON } from '../store.js';
 import { confirmModal } from '../ui.js';
+import { fmtDate } from '../util.js';
+
+// Hand a file to the share sheet (iPhone: Save to Files / iCloud Drive), falling
+// back to a download. Resolves false if the user cancelled.
+async function saveFile(name, text, type) {
+  const file = new File([text], name, { type });
+  if (navigator.canShare?.({ files: [file] })) {
+    try { await navigator.share({ files: [file] }); return true; } catch (e) { if (e.name === 'AbortError') return false; }
+  }
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(file);
+  a.download = name;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  return true;
+}
 
 export function renderSettings(root) {
   const s = state.settings;
@@ -16,10 +32,12 @@ export function renderSettings(root) {
     </div>
     <h2>Backup</h2>
     <div class="card">
-      <p class="muted" style="margin-top:0">Your data lives only on this phone. Export a backup now and then
-      (save it to Files or iCloud Drive), and import it on a new phone.</p>
-      <button class="primary block" data-export>Export backup</button>
+      <p class="muted" style="margin-top:0">Your data lives only in this home-screen app (a Safari tab has
+      separate, empty storage). Export a backup now and then: tap <b>Save to Files</b>, then <b>iCloud Drive</b>.</p>
+      <p style="margin:0 0 4px"><b>Last backup:</b> ${s.lastBackup ? fmtDate(s.lastBackup) : 'never'}</p>
+      <button class="primary block" data-export>Export backup (JSON, restorable)</button>
       <button class="block" data-import>Import backup</button>
+      <button class="block" data-export-md>Export readable copy (Markdown)</button>
       <input type="file" accept="application/json,.json" data-file class="hidden">
       <p class="muted" data-msg></p>
     </div>
@@ -32,19 +50,17 @@ export function renderSettings(root) {
     save();
   };
 
+  const today = () => new Date().toISOString().slice(0, 10);
+
   root.querySelector('[data-export]').onclick = async () => {
-    const name = `liftlog-backup-${new Date().toISOString().slice(0, 10)}.json`;
-    const file = new File([exportJSON()], name, { type: 'application/json' });
-    // On iPhone the share sheet is the reliable way to save into Files.
-    if (navigator.canShare?.({ files: [file] })) {
-      try { await navigator.share({ files: [file] }); return; } catch (e) { if (e.name === 'AbortError') return; }
-    }
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(file);
-    a.download = name;
-    a.click();
-    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+    if (!(await saveFile(`liftlog-backup-${today()}.json`, exportJSON(), 'application/json'))) return;
+    s.lastBackup = Date.now();
+    save();
+    renderSettings(root);
   };
+
+  root.querySelector('[data-export-md]').onclick = () =>
+    saveFile(`liftlog-${today()}.md`, exportMarkdown(), 'text/markdown');
 
   const fileIn = root.querySelector('[data-file]');
   root.querySelector('[data-import]').onclick = () => fileIn.click();
@@ -55,6 +71,9 @@ export function renderSettings(root) {
     if (!(await confirmModal('Importing replaces ALL data on this phone with the backup. Continue?', 'Replace data', true))) return;
     try {
       importJSON(await f.text());
+      // The restored data came from a backup file, so it is already backed up.
+      state.settings.lastBackup = Date.now();
+      save();
       renderSettings(root);
       root.querySelector('[data-msg]').textContent = 'Backup restored.';
     } catch (e) {

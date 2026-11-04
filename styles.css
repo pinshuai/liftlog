@@ -163,3 +163,6 @@ svg.chart .pt { fill: var(--accent); }
 }
 h1.ex-name .ex-icon { width: 44px; height: 44px; }
 h3.ex-name .ex-icon { width: 30px; height: 30px; color: var(--accent); }
+
+/* Backup reminder on the Workout tab */
+.backup-due { display: block; text-decoration: none; color: inherit; border-color: #e0a106; background: rgba(224, 161, 6, .12); }
