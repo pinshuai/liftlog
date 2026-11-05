@@ -10,10 +10,12 @@ const flatBench = (top) => `
   ${head(7, 20)}${l(10, 21, 22, 21)}${l(22, 21, 26, 24)}
   ${l(14, 21, 14, 11)}${l(19, 21, 19, 11)}${top}`;
 
+// Backrest rises to the upper left with the head at the top; hips on a flat seat,
+// knees bent with feet on the floor; arms press straight up.
 const inclineBench = (top) => `
-  ${l(6, 28, 22, 18)}${l(22, 18, 28, 28)}
-  ${head(8, 20)}${l(10, 22, 20, 15)}${l(20, 15, 25, 21)}
-  ${l(13, 20, 13, 9)}${l(17, 17, 17, 9)}${top}`;
+  ${l(8, 13, 18, 26)}${l(18, 26, 26, 26)}${l(18, 26, 16, 30)}${l(25, 26, 25, 30)}
+  ${head(9.5, 8.5)}${l(11.5, 11, 20, 23.5)}${l(20, 23.5, 27, 22)}${l(27, 22, 28, 29)}
+  ${l(14, 14.7, 14, 5)}${l(18, 20.5, 18, 5)}${top}`;
 
 const ICONS = {
   'bi-squat-barbell': `
@@ -22,8 +24,8 @@ const ICONS = {
     ${l(16, 11, 11, 10)}${l(16, 11, 21, 10)}`,
   'bi-bench-press-barbell': flatBench(barbell(8, 25, 10)),
   'bi-bench-press-dumbbell': flatBench(dumbbell(14, 10) + dumbbell(19, 10)),
-  'bi-incline-bench-press-barbell': inclineBench(barbell(6, 24, 8)),
-  'bi-incline-bench-press-dumbbell': inclineBench(dumbbell(12, 8, 1.6) + dumbbell(18, 8, 1.6)),
+  'bi-incline-bench-press-barbell': inclineBench(barbell(11, 28, 4.5)),
+  'bi-incline-bench-press-dumbbell': inclineBench(dumbbell(14, 4.5, 1.6) + dumbbell(18, 4.5, 1.6)),
   'bi-chest-dip-assisted': `
     ${l(5, 13, 5, 29)}${l(27, 13, 27, 29)}${l(3, 13, 9, 13)}${l(23, 13, 29, 13)}
     ${head(16, 6)}${l(16, 9, 16, 19)}${l(16, 11, 7, 13)}${l(16, 11, 25, 13)}
