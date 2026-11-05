@@ -1,7 +1,7 @@
 import { state } from './store.js';
 import { show as showRest } from './rest.js';
 import { renderWorkoutHome, renderTemplate } from './views/workout.js';
-import { renderHistory, renderWorkoutDetail } from './views/history.js';
+import { renderHistory, renderWorkoutDetail, renderWorkoutEdit } from './views/history.js';
 import { renderExercises, renderExerciseDetail } from './views/exercises.js';
 import { renderSettings } from './views/settings.js';
 
@@ -12,6 +12,7 @@ const routes = [
   [/^\/workout$/, 'workout', () => renderWorkoutHome(root)],
   [/^\/template\/(.+)$/, 'workout', (id) => renderTemplate(root, id === 'new' ? null : id)],
   [/^\/history$/, 'history', () => renderHistory(root)],
+  [/^\/history\/([^/]+)\/edit$/, 'history', (id) => renderWorkoutEdit(root, id)],
   [/^\/history\/(.+)$/, 'history', (id) => renderWorkoutDetail(root, id)],
   [/^\/exercises$/, 'exercises', () => renderExercises(root)],
   [/^\/exercise\/(.+)$/, 'exercises', (id) => renderExerciseDetail(root, decodeURIComponent(id))],
