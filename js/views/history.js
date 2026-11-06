@@ -7,19 +7,81 @@ import { exIcon } from '../icons.js';
 const volume = (w) => w.entries.filter((e) => !isAssisted(e.exerciseId))
   .reduce((sum, e) => sum + e.sets.reduce((s, x) => s + (Number(x.w) || 0) * (Number(x.r) || 0), 0), 0);
 
+const workoutCard = (w, unit) => `
+  <div class="card link" data-id="${w.id}">
+    <div class="row between"><b>${esc(w.name)}</b><span class="muted">${fmtDuration(w.end - w.start)}</span></div>
+    <div class="muted">${fmtDate(w.start)} &middot; ${fmtNum(toUnit(volume(w), w.unit, unit))} ${unit} volume</div>
+    <div style="margin-top:6px">${w.entries.map((e) => `${e.sets.length} x ${esc(getExercise(e.exerciseId).name)}`).join('<br>')}</div>
+  </div>`;
+
+// Kept across renders so coming back from a workout returns to the same view and month.
+let view = 'list';
+let calYear = new Date().getFullYear();
+let calMonth = new Date().getMonth();
+let selDay = null; // 'YYYY-MM-DD' or null for the whole month
+
 export function renderHistory(root) {
   const unit = state.settings.unit;
   const list = [...state.workouts].reverse();
   root.innerHTML = `
-    <h1>History</h1>
+    <div class="row between">
+      <h1>History</h1>
+      <div class="seg">
+        <button data-view="list" class="${view === 'list' ? 'on' : ''}">List</button>
+        <button data-view="cal" class="${view === 'cal' ? 'on' : ''}">Calendar</button>
+      </div>
+    </div>
     ${list.length ? '' : '<p class="muted">Finished workouts will show up here.</p>'}
-    ${list.map((w) => `
-      <div class="card link" data-id="${w.id}">
-        <div class="row between"><b>${esc(w.name)}</b><span class="muted">${fmtDuration(w.end - w.start)}</span></div>
-        <div class="muted">${fmtDate(w.start)} &middot; ${fmtNum(toUnit(volume(w), w.unit, unit))} ${unit} volume</div>
-        <div style="margin-top:6px">${w.entries.map((e) => `${e.sets.length} x ${esc(getExercise(e.exerciseId).name)}`).join('<br>')}</div>
-      </div>`).join('')}`;
+    ${view === 'cal' ? calendar(list, unit) : list.map((w) => workoutCard(w, unit)).join('')}`;
+
+  root.querySelectorAll('[data-view]').forEach((b) => (b.onclick = () => { view = b.dataset.view; renderHistory(root); }));
+  root.querySelectorAll('[data-month]').forEach((b) => (b.onclick = () => {
+    const d = new Date(calYear, calMonth + Number(b.dataset.month), 1);
+    calYear = d.getFullYear();
+    calMonth = d.getMonth();
+    selDay = null;
+    renderHistory(root);
+  }));
+  root.querySelectorAll('[data-day]').forEach((b) => (b.onclick = () => {
+    selDay = selDay === b.dataset.day ? null : b.dataset.day;
+    renderHistory(root);
+  }));
   root.querySelectorAll('[data-id]').forEach((c) => (c.onclick = () => (location.hash = `#/history/${c.dataset.id}`)));
+}
+
+// Month grid (weeks start Sunday); days with workouts are highlighted.
+// Below it: the selected day's workouts, or the whole month's.
+function calendar(list, unit) {
+  const byDay = {};
+  for (const w of list) (byDay[dateValue(w.start)] ||= []).push(w);
+  const first = new Date(calYear, calMonth, 1);
+  const days = new Date(calYear, calMonth + 1, 0).getDate();
+  const today = dateValue(Date.now());
+  const key = (d) => `${calYear}-${pad(calMonth + 1)}-${pad(d)}`;
+  const cells = [];
+  for (let i = 0; i < first.getDay(); i++) cells.push('<span></span>');
+  for (let d = 1; d <= days; d++) {
+    const k = key(d);
+    const cls = [byDay[k] && 'has', k === today && 'today', k === selDay && 'sel'].filter(Boolean).join(' ');
+    cells.push(`<button class="${cls}" data-day="${k}" aria-label="${k}${byDay[k] ? `, ${byDay[k].length} workout` : ''}">${d}</button>`);
+  }
+  const monthPrefix = `${calYear}-${pad(calMonth + 1)}-`;
+  const shown = selDay ? byDay[selDay] || [] : list.filter((w) => dateValue(w.start).startsWith(monthPrefix));
+  const title = first.toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
+  return `
+    <div class="card cal">
+      <div class="row between">
+        <button class="text" data-month="-1" aria-label="Previous month">&lsaquo;</button>
+        <b>${title}</b>
+        <button class="text" data-month="1" aria-label="Next month">&rsaquo;</button>
+      </div>
+      <div class="cal-grid cal-head">${['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((x) => `<span>${x}</span>`).join('')}</div>
+      <div class="cal-grid">${cells.join('')}</div>
+    </div>
+    <p class="muted">${selDay
+      ? `${fmtDate(new Date(`${selDay}T12:00`).getTime())}: ${shown.length || 'no'} workout${shown.length === 1 ? '' : 's'}`
+      : `${shown.length} workout${shown.length === 1 ? '' : 's'} in ${title}`}</p>
+    ${shown.map((w) => workoutCard(w, unit)).join('')}`;
 }
 
 export function renderWorkoutDetail(root, id) {

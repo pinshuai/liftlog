@@ -166,3 +166,19 @@ h3.ex-name .ex-icon { width: 30px; height: 30px; color: var(--accent); }
 
 /* Backup reminder on the Workout tab */
 .backup-due { display: block; text-decoration: none; color: inherit; border-color: #e0a106; background: rgba(224, 161, 6, .12); }
+
+/* History: List / Calendar switch and month grid */
+.seg { display: inline-flex; background: var(--line); border-radius: 10px; padding: 2px; }
+.seg button { min-height: 34px; padding: 4px 12px; background: transparent; font-size: 14px; }
+.seg button.on { background: var(--card); font-weight: 600; }
+.cal .row button { font-size: 26px; line-height: 1; padding: 4px 14px; }
+.cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; text-align: center; }
+.cal-head { margin: 6px 0 4px; font-size: 12px; color: var(--muted); }
+.cal-grid button {
+  min-height: 0; aspect-ratio: 1; padding: 0; border-radius: 50%;
+  background: transparent; font-size: 15px; font-variant-numeric: tabular-nums;
+}
+.cal-grid button.has { background: var(--accent); color: var(--accent-text); font-weight: 600; }
+.cal-grid button.today { box-shadow: inset 0 0 0 2px var(--accent); }
+.cal-grid button.has.today { box-shadow: inset 0 0 0 2px var(--card); }
+.cal-grid button.sel { outline: 2px solid var(--text); outline-offset: 1px; }
