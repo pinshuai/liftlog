@@ -3,13 +3,16 @@ const list = [
   ['Squat (Barbell)', 'Legs'],
   ['Bench Press (Barbell)', 'Chest'],
   ['Bench Press (Dumbbell)', 'Chest'],
+  ['Push Up', 'Chest'],
   ['Incline Bench Press (Barbell)', 'Chest'],
   ['Incline Bench Press (Dumbbell)', 'Chest'],
   ['Chest Dip (Assisted)', 'Chest'],
   ['Pull Up (Assisted)', 'Back'],
   ['Deadlift (Barbell)', 'Back'],
   ['Triceps Extension (Dumbbell)', 'Arms'],
+  ['Crunch', 'Core'],
   ['Crunch (Machine)', 'Core'],
+  ['Sit Up', 'Core'],
 ];
 
 const slug = (s) => s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');

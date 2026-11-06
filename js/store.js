@@ -64,8 +64,11 @@ export function getExercise(id) {
 // weight, so lower is better and the weight is not lifted load.
 export const isAssisted = (exerciseId) => /assisted/i.test(getExercise(exerciseId).name);
 
-// "185 lb", or "50 lb assist" for assisted exercises.
-export const weightLabel = (exerciseId, w, unit) => `${w === '' || w == null ? 0 : w} ${unit}${isAssisted(exerciseId) ? ' assist' : ''}`;
+// "185 lb", "50 lb assist" for assisted exercises, or "bodyweight" when no weight was entered.
+export const weightLabel = (exerciseId, w, unit) => {
+  if (isAssisted(exerciseId)) return `${w === '' || w == null ? 0 : w} ${unit} assist`;
+  return Number(w) ? `${w} ${unit}` : 'bodyweight';
+};
 
 export function addCustomExercise(name, bodyPart) {
   const ex = { id: 'cx-' + uid(), name: name.trim(), bodyPart, custom: true };

@@ -68,17 +68,19 @@ export function renderExerciseDetail(root, id) {
   }));
 
   // Assisted: best = least assistance (more reps breaks ties); chart least assistance.
+  // Bodyweight (no weight ever entered): best = most reps; chart most reps.
   // Otherwise: best = heaviest set; chart best estimated 1RM.
   const assisted = isAssisted(id);
+  const bodyweight = !assisted && sessions.length > 0 && sessions.every(({ sets }) => sets.every((s) => !s.w));
   const better = (s, b) => !b || (assisted ? s.w < b.w : s.w > b.w) || (s.w === b.w && s.r > b.r);
   let bestSet = null, bestE1rm = 0;
   const points = sessions.map(({ workout, sets }) => {
     let top = assisted ? Infinity : 0;
     for (const s of sets) {
-      top = assisted ? Math.min(top, s.w) : Math.max(top, e1rm(s.w, s.r));
+      top = assisted ? Math.min(top, s.w) : bodyweight ? Math.max(top, s.r) : Math.max(top, e1rm(s.w, s.r));
       if (better(s, bestSet)) bestSet = s;
     }
-    if (!assisted) bestE1rm = Math.max(bestE1rm, top);
+    if (!assisted && !bodyweight) bestE1rm = Math.max(bestE1rm, top);
     return { x: workout.start, y: top };
   }).filter((p) => (assisted ? Number.isFinite(p.y) : p.y > 0));
 
@@ -86,12 +88,13 @@ export function renderExerciseDetail(root, id) {
     <a class="btn text" href="#/exercises">&larr; Exercises</a>
     <h1 class="ex-name">${exIcon(id)}${esc(ex.name)}</h1>
     <div class="card">
-      <span class="stat"><span class="muted">${assisted ? 'Least assist' : 'Best set'}</span><b>${bestSet ? `${fmtNum(bestSet.w)} x ${bestSet.r}` : '-'}</b></span>
-      ${assisted ? '' : `<span class="stat"><span class="muted">Est. 1RM</span><b>${bestE1rm ? fmtNum(bestE1rm) : '-'}</b></span>`}
+      <span class="stat"><span class="muted">${assisted ? 'Least assist' : bodyweight ? 'Most reps' : 'Best set'}</span><b>${bestSet ? (bodyweight ? bestSet.r : `${fmtNum(bestSet.w)} x ${bestSet.r}`) : '-'}</b></span>
+      ${assisted || bodyweight ? '' : `<span class="stat"><span class="muted">Est. 1RM</span><b>${bestE1rm ? fmtNum(bestE1rm) : '-'}</b></span>`}
       <span class="stat"><span class="muted">Sessions</span><b>${sessions.length}</b></span>
     </div>
     <div class="card">${chart(points, assisted
       ? `Least assistance (${unit}) per session, lower is better`
+      : bodyweight ? 'Most reps in a set per session'
       : `Estimated 1-rep max (${unit}) per session`)}</div>
     <h2>Sessions</h2>
     ${sessions.length ? '' : '<p class="muted">No sessions logged yet.</p>'}
