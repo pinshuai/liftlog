@@ -7,7 +7,7 @@ const VERSION = 1;
 function blank() {
   return {
     version: VERSION,
-    settings: { unit: 'lb', restSec: 120, lastBackup: null },
+    settings: { unit: 'lb', restSec: 120, restSound: true, lastBackup: null },
     customExercises: [],
     templates: [],
     workouts: [],

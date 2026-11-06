@@ -29,6 +29,10 @@ export function renderSettings(root) {
       </select>
       <label class="muted" style="display:block;margin-top:12px">Default rest timer (seconds, 0 = off)</label>
       <input data-rest inputmode="numeric" value="${s.restSec}" style="margin-top:4px">
+      <label class="row" style="margin-top:12px">
+        <input type="checkbox" data-sound ${s.restSound ? 'checked' : ''} style="width:22px;min-height:22px;margin:0">
+        Sound when rest ends
+      </label>
     </div>
     <h2>Backup</h2>
     <div class="card">
@@ -49,6 +53,7 @@ export function renderSettings(root) {
     s.restSec = Math.max(0, Math.min(900, parseInt(e.target.value, 10) || 0));
     save();
   };
+  root.querySelector('[data-sound]').onchange = (e) => { s.restSound = e.target.checked; save(); };
 
   const today = () => new Date().toISOString().slice(0, 10);
 
