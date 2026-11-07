@@ -36,9 +36,15 @@ function route() {
 let lastPath = location.hash;
 window.addEventListener('hashchange', () => {
   route();
-  if (location.hash !== lastPath) window.scrollTo(0, 0);
+  if (location.hash !== lastPath) root.scrollTo(0, 0);
   lastPath = location.hash;
 });
+
+// iOS can leave the page shifted after the keyboard closes; put it back once
+// focus has left all text fields.
+document.addEventListener('focusout', () => setTimeout(() => {
+  if (!document.activeElement?.matches('input, select, textarea') && window.scrollY) window.scrollTo(0, 0);
+}, 100));
 route();
 if (state.active?.restEnd) showRest();
 

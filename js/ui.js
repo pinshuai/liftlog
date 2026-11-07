@@ -3,10 +3,10 @@ import { BODY_PARTS } from './exercises.js';
 import { esc, html } from './util.js';
 import { exIcon } from './icons.js';
 
-// Bottom-sheet modal. Returns { el, close }.
-export function openModal(inner) {
+// Bottom-sheet modal, or a top sheet (top = true) when it has text fields. Returns { el, close }.
+export function openModal(inner, top = false) {
   const bg = document.createElement('div');
-  bg.className = 'modal-bg';
+  bg.className = top ? 'modal-bg top' : 'modal-bg';
   bg.append(html(`<div class="modal">${inner}</div>`));
   document.body.append(bg);
   const close = () => bg.remove();
@@ -31,7 +31,7 @@ export function promptModal(title, value = '') {
       <h2>${esc(title)}</h2>
       <input data-in value="${esc(value)}">
       <button class="primary block" data-ok>Save</button>
-      <button class="block" data-cancel>Cancel</button>`);
+      <button class="block" data-cancel>Cancel</button>`, true);
     const input = el.querySelector('[data-in]');
     input.focus();
     const ok = () => { close(); resolve(input.value.trim() || null); };
@@ -48,7 +48,7 @@ export function pickExercise() {
       <div class="row between"><h2>Add exercise</h2><button class="text" data-cancel>Cancel</button></div>
       <input data-q placeholder="Search" autocomplete="off">
       <div class="scroll" data-list></div>
-      <button class="block" data-new>+ Create custom exercise</button>`);
+      <button class="block" data-new>+ Create custom exercise</button>`, true);
     const q = el.querySelector('[data-q]');
     const listEl = el.querySelector('[data-list]');
     const done = (id) => { close(); resolve(id); };
